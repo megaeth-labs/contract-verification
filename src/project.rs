@@ -1,10 +1,29 @@
 use std::ops::Range;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use eyre::{Result, WrapErr, bail, eyre};
 use foundry_compilers::compilers::solc::Solc;
 use foundry_compilers_artifacts_solc::{CompilerOutput, SolcInput};
 use tracing::debug;
+
+/// Solc specified as either a filesystem path or a version string.
+#[derive(Clone, Debug)]
+pub enum SolcRef {
+    Path(PathBuf),
+    Version(semver::Version),
+}
+
+impl std::str::FromStr for SolcRef {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        if let Ok(v) = s.parse::<semver::Version>() {
+            Ok(SolcRef::Version(v))
+        } else {
+            Ok(SolcRef::Path(PathBuf::from(s)))
+        }
+    }
+}
 
 pub enum Project {
     StandardJson { input: SolcInput, solc: Solc },
@@ -19,17 +38,17 @@ pub struct CompiledRuntimeBytecode {
 }
 
 impl Project {
-    pub fn standard_json(
-        input_path: &Path,
-        solc_version: Option<&semver::Version>,
-    ) -> Result<Self> {
+    pub fn standard_json(input_path: &Path, solc: Option<&SolcRef>) -> Result<Self> {
         let contents = std::fs::read_to_string(input_path)
             .wrap_err_with(|| format!("failed to read {}", input_path.display()))?;
         let input: SolcInput = serde_json::from_str(&contents)
             .wrap_err_with(|| format!("failed to parse {} as SolcInput", input_path.display()))?;
-        let solc = match solc_version {
-            Some(v) => Solc::find_or_install(v)
+        let solc = match solc {
+            Some(SolcRef::Version(v)) => Solc::find_or_install(v)
                 .wrap_err_with(|| format!("failed to find or install solc {v}"))?,
+            Some(SolcRef::Path(p)) => {
+                Solc::new(p).wrap_err_with(|| format!("invalid solc path: {}", p.display()))?
+            }
             None => Solc::new("solc").wrap_err("failed to find solc on PATH")?,
         };
 

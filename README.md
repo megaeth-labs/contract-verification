@@ -30,7 +30,7 @@ verify-contract [OPTIONS] --standard-json-input <PATH> --contract-name <NAME> <A
 |---|---|---|
 | `--standard-json-input <PATH>` | `-i` | Path to solc standard JSON input file (required) |
 | `--contract-name <NAME>` | `-c` | Contract name to verify (required) |
-| `--solc-version <VERSION>` | `-s` | Solc version (e.g. `0.8.28`). Omit to use `solc` from PATH |
+| `--solc <VERSION_OR_PATH>` | `-s` | Solc version (e.g. `0.8.27`) or path (e.g. `/usr/bin/solc`). Omit to use `solc` from PATH |
 | `--rpc-url <URL>` | `-r` | RPC endpoint URL (default: `http://localhost:8545`, env: `RPC_URL`) |
 | `-v` | | Verbosity (`-v` error, `-vv` warn, `-vvv` info, `-vvvv` debug, `-vvvvv` trace) |
 
@@ -42,7 +42,7 @@ Verify against a bytecode file:
 verify-contract \
   -i input.json \
   -c MyContract \
-  -s 0.8.28 \
+  -s 0.8.27 \
   path/to/onchain.bytecode
 ```
 
@@ -52,8 +52,8 @@ Verify against a deployed contract address:
 verify-contract \
   -i input.json \
   -c MyContract \
-  -s 0.8.28 \
-  -r https://eth.llamarpc.com \
+  -s 0.8.27 \
+  -r https://mainnet.megaeth.com/rpc \
   0xabc...def
 ```
 

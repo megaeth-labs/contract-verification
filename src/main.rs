@@ -21,10 +21,10 @@ struct Cli {
     #[arg(short = 'c', long)]
     contract_name: String,
 
-    /// Solc version to use for compilation (e.g. 0.8.28).
+    /// Solc version or path (e.g. 0.8.28 or /usr/bin/solc).
     /// When omitted, uses `solc` from PATH.
     #[arg(short = 's', long)]
-    solc_version: Option<semver::Version>,
+    solc: Option<project::SolcRef>,
 
     /// RPC endpoint URL (required when address is used)
     #[arg(
@@ -62,7 +62,7 @@ async fn run(cli: &Cli) -> eyre::Result<()> {
 
     // Compile source and extract deployed bytecode + placeholder ranges
     let project =
-        project::Project::standard_json(&cli.standard_json_input, cli.solc_version.as_ref())?;
+        project::Project::standard_json(&cli.standard_json_input, cli.solc.as_ref())?;
     let compiled = project.compiled_runtime_bytecode(&cli.contract_name)?;
 
     // Compare, skipping placeholder regions

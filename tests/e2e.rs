@@ -12,7 +12,7 @@ fn verify_borrow_logic() {
             "tests/fixtures/BorrowLogic.input.json",
             "--contract-name",
             "BorrowLogic",
-            "--solc-version",
+            "--solc",
             "0.8.27",
             "tests/fixtures/BorrowLogic.onchain.bytecode",
         ])
