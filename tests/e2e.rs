@@ -8,9 +8,12 @@ fn bin() -> Command {
 fn verify_borrow_logic() {
     let output = bin()
         .args([
-            "--standard-json-input", "tests/fixtures/BorrowLogic.input.json",
-            "--contract-name", "BorrowLogic",
-            "--solc-version", "0.8.27",
+            "--standard-json-input",
+            "tests/fixtures/BorrowLogic.input.json",
+            "--contract-name",
+            "BorrowLogic",
+            "--solc-version",
+            "0.8.27",
             "tests/fixtures/BorrowLogic.onchain.bytecode",
         ])
         .output()

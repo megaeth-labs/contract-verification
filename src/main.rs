@@ -8,7 +8,10 @@ use std::path::PathBuf;
 use clap::Parser;
 
 #[derive(Parser, Debug)]
-#[command(name = "contract-verification", about = "Verify smart contract bytecode against source code")]
+#[command(
+    name = "contract-verification",
+    about = "Verify smart contract bytecode against source code"
+)]
 struct Cli {
     /// Path to solc standard JSON input file
     #[arg(short = 'i', long = "standard-json-input")]
@@ -24,7 +27,12 @@ struct Cli {
     solc_version: Option<semver::Version>,
 
     /// RPC endpoint URL (required when address is used)
-    #[arg(short = 'r', long, default_value = "http://localhost:8545", env = "RPC_URL")]
+    #[arg(
+        short = 'r',
+        long,
+        default_value = "http://localhost:8545",
+        env = "RPC_URL"
+    )]
     rpc_url: String,
 
     /// Contract address, path to bytecode file, or inline hex bytecode.

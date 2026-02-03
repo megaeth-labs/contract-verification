@@ -1,7 +1,7 @@
 use std::ops::Range;
 use std::path::Path;
 
-use eyre::{bail, eyre, Result, WrapErr};
+use eyre::{Result, WrapErr, bail, eyre};
 use foundry_compilers::compilers::solc::Solc;
 use foundry_compilers_artifacts_solc::{CompilerOutput, SolcInput};
 use tracing::debug;
@@ -30,8 +30,7 @@ impl Project {
         let solc = match solc_version {
             Some(v) => Solc::find_or_install(v)
                 .wrap_err_with(|| format!("failed to find or install solc {v}"))?,
-            None => Solc::new("solc")
-                .wrap_err("failed to find solc on PATH")?,
+            None => Solc::new("solc").wrap_err("failed to find solc on PATH")?,
         };
 
         Ok(Project::StandardJson { input, solc })
@@ -139,7 +138,11 @@ fn detect_push_zero_placeholders(compiled: &[u8], placeholders: &mut Vec<Range<u
         && compiled.len() >= 1 + ADDR_LEN
         && compiled[1..1 + ADDR_LEN].iter().all(|&b| b == 0)
     {
-        debug!(start = 1, end = 1 + ADDR_LEN, "detected library self-address placeholder");
+        debug!(
+            start = 1,
+            end = 1 + ADDR_LEN,
+            "detected library self-address placeholder"
+        );
         placeholders.push(1..1 + ADDR_LEN);
     }
 }

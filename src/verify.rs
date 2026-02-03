@@ -1,4 +1,4 @@
-use eyre::{bail, Result};
+use eyre::{Result, bail};
 use tracing::info;
 
 use crate::project::CompiledRuntimeBytecode;
@@ -9,10 +9,7 @@ use crate::project::CompiledRuntimeBytecode;
 /// immutable values, library self-address) are excluded from comparison.
 /// CBOR metadata appended by the compiler is stripped from both sides
 /// before comparison.
-pub fn verify_deployed_bytecode(
-    compiled: &CompiledRuntimeBytecode,
-    onchain: &[u8],
-) -> Result<()> {
+pub fn verify_deployed_bytecode(compiled: &CompiledRuntimeBytecode, onchain: &[u8]) -> Result<()> {
     let placeholders = &compiled.placeholders;
 
     info!(

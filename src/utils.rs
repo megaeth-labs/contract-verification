@@ -2,7 +2,7 @@ use std::path::Path;
 
 use alloy::primitives::Address;
 use alloy::providers::{Provider, ProviderBuilder};
-use eyre::{bail, eyre, WrapErr};
+use eyre::{WrapErr, bail, eyre};
 
 /// Parse a hex string (with optional `0x` prefix) into bytes.
 pub fn parse_bytecode_hex(hex_str: &str) -> eyre::Result<Vec<u8>> {
