@@ -60,7 +60,7 @@ impl Project {
                 }
 
                 // Search for the contract across all files
-                for (_file, contracts) in &compiler_output.contracts {
+                for contracts in compiler_output.contracts.values() {
                     if let Some(contract) = contracts.get(contract_name) {
                         let evm = contract
                             .evm
@@ -135,7 +135,7 @@ fn detect_push_zero_placeholders(compiled: &[u8], placeholders: &mut Vec<Range<u
     const ADDR_LEN: usize = 20;
 
     if compiled.first() == Some(&PUSH20)
-        && compiled.len() >= 1 + ADDR_LEN
+        && compiled.len() > ADDR_LEN
         && compiled[1..1 + ADDR_LEN].iter().all(|&b| b == 0)
     {
         debug!(
