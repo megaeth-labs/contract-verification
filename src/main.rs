@@ -9,7 +9,7 @@ use clap::Parser;
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "contract-verification",
+    name = "verify-contract",
     about = "Verify smart contract bytecode against source code"
 )]
 struct Cli {

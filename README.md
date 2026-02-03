@@ -1,4 +1,4 @@
-# contract-verification
+# verify-contract
 
 Verify deployed smart contract bytecode against source code by compiling a Solidity standard JSON input and comparing the result to on-chain bytecode.
 
@@ -11,7 +11,7 @@ The comparison automatically accounts for:
 ## Usage
 
 ```
-contract-verification [OPTIONS] --standard-json-input <PATH> --contract-name <NAME> <ADDRESS_OR_BYTECODE>
+verify-contract [OPTIONS] --standard-json-input <PATH> --contract-name <NAME> <ADDRESS_OR_BYTECODE>
 ```
 
 ### Positional argument
@@ -39,7 +39,7 @@ contract-verification [OPTIONS] --standard-json-input <PATH> --contract-name <NA
 Verify against a bytecode file:
 
 ```sh
-contract-verification \
+verify-contract \
   -i input.json \
   -c MyContract \
   -s 0.8.28 \
@@ -49,7 +49,7 @@ contract-verification \
 Verify against a deployed contract address:
 
 ```sh
-contract-verification \
+verify-contract \
   -i input.json \
   -c MyContract \
   -s 0.8.28 \
@@ -60,7 +60,7 @@ contract-verification \
 Verify with inline hex bytecode:
 
 ```sh
-contract-verification \
+verify-contract \
   -i input.json \
   -c MyContract \
   0x6080604052...
