@@ -76,10 +76,10 @@ impl Project {
 
                 // Log compiler warnings
                 for diag in &compiler_output.errors {
-                    if !diag.severity.is_error() {
-                        if let Some(msg) = &diag.formatted_message {
-                            warn!("Solc warning: {msg}");
-                        }
+                    if !diag.severity.is_error()
+                        && let Some(msg) = &diag.formatted_message
+                    {
+                        warn!("Solc warning: {msg}");
                     }
                 }
 
