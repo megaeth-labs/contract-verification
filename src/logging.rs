@@ -29,7 +29,7 @@ impl LogArgs {
                 4 => Level::DEBUG,
                 _ => Level::TRACE,
             };
-            EnvFilter::new(format!("contract_verification={level}"))
+            EnvFilter::new(format!("verify_contract={level}"))
         };
 
         tracing_subscriber::fmt()

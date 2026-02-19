@@ -3,6 +3,7 @@ use std::path::Path;
 use alloy::primitives::Address;
 use alloy::providers::{Provider, ProviderBuilder};
 use eyre::{WrapErr, bail, eyre};
+use tracing::{debug, info, trace};
 
 /// Parse a hex string (with optional `0x` prefix) into bytes.
 pub fn parse_bytecode_hex(hex_str: &str) -> eyre::Result<Vec<u8>> {
@@ -31,17 +32,29 @@ pub async fn resolve_bytecode(value: &str, rpc_url: &str) -> eyre::Result<Vec<u8
         && trimmed.starts_with("0x")
         && trimmed[2..].chars().all(|c| c.is_ascii_hexdigit())
     {
-        return fetch_bytecode_rpc(trimmed, rpc_url).await;
+        info!(address = trimmed, rpc_url, "Fetching bytecode from chain");
+        let bytes = fetch_bytecode_rpc(trimmed, rpc_url).await?;
+        debug!(size = bytes.len(), "Fetched bytecode from RPC");
+        trace!(bytes = %alloy::hex::encode(&bytes), "Resolved bytecode prefix");
+        return Ok(bytes);
     }
 
     // 2. Check if it's a file path
     let path = Path::new(trimmed);
     if path.exists() {
-        return read_bytecode_file(path);
+        info!(path = %path.display(), "Reading bytecode from file");
+        let bytes = read_bytecode_file(path)?;
+        debug!(size = bytes.len(), "Read bytecode from file");
+        trace!(bytes = %alloy::hex::encode(&bytes), "Resolved bytecode prefix");
+        return Ok(bytes);
     }
 
     // 3. Treat as inline hex
-    parse_bytecode_hex(trimmed)
+    info!("Using inline hex bytecode");
+    let bytes = parse_bytecode_hex(trimmed)?;
+    debug!(size = bytes.len(), "Parsed inline hex bytecode");
+    trace!(bytes = %alloy::hex::encode(&bytes), "Resolved bytecode prefix");
+    Ok(bytes)
 }
 
 /// Fetch deployed bytecode for an address via `eth_getCode`.

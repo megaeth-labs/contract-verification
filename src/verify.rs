@@ -1,5 +1,5 @@
 use eyre::{Result, bail};
-use tracing::info;
+use tracing::{debug, info, trace};
 
 use crate::project::CompiledRuntimeBytecode;
 
@@ -16,13 +16,30 @@ pub fn verify_deployed_bytecode(compiled: &CompiledRuntimeBytecode, onchain: &[u
         compiled_len = compiled.bytes.len(),
         onchain_len = onchain.len(),
         placeholder_regions = placeholders.len(),
-        "starting bytecode comparison"
+        "Starting bytecode comparison"
     );
 
     // Strip CBOR metadata from both sides.  The last two bytes of solc
     // output encode the metadata section length as a big-endian u16.
-    let mut compiled_code = strip_cbor_metadata(&compiled.bytes).to_vec();
-    let mut onchain_code = strip_cbor_metadata(onchain).to_vec();
+    let compiled_code_stripped = strip_cbor_metadata(&compiled.bytes);
+    let onchain_code_stripped = strip_cbor_metadata(onchain);
+
+    debug!(
+        compiled_metadata_bytes = compiled.bytes.len() - compiled_code_stripped.len(),
+        onchain_metadata_bytes = onchain.len() - onchain_code_stripped.len(),
+        "Stripped CBOR metadata"
+    );
+
+    let mut compiled_code = compiled_code_stripped.to_vec();
+    let mut onchain_code = onchain_code_stripped.to_vec();
+
+    debug!(
+        compiled_len = compiled_code.len(),
+        onchain_len = onchain_code.len(),
+        "Code lengths after stripping metadata"
+    );
+    trace!(compiled_hex = %alloy::hex::encode(&compiled_code), "Compiled bytecode after metadata strip");
+    trace!(onchain_hex = %alloy::hex::encode(&onchain_code), "On-chain bytecode after metadata strip");
 
     if compiled_code.len() != onchain_code.len() {
         bail!(
@@ -36,12 +53,13 @@ pub fn verify_deployed_bytecode(compiled: &CompiledRuntimeBytecode, onchain: &[u
     for r in placeholders {
         let end = r.end.min(compiled_code.len());
         let start = r.start.min(end);
+        debug!(start, end, "Zeroing out placeholder region");
         compiled_code[start..end].fill(0);
         onchain_code[start..end].fill(0);
     }
 
     if compiled_code == onchain_code {
-        info!("bytecode verification succeeded");
+        info!("Bytecode verification succeeded");
         Ok(())
     } else {
         let mismatches: Vec<usize> = compiled_code

@@ -6,6 +6,7 @@ mod verify;
 use std::path::PathBuf;
 
 use clap::Parser;
+use tracing::{debug, info};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -57,15 +58,25 @@ async fn main() {
 }
 
 async fn run(cli: &Cli) -> eyre::Result<()> {
+    debug!(
+        input = %cli.standard_json_input.display(),
+        contract = %cli.contract_name,
+        solc = ?cli.solc,
+        rpc_url = %cli.rpc_url,
+        "Parsed CLI arguments"
+    );
+
     // Read on-chain bytecode
+    info!("Resolving on-chain bytecode");
     let onchain_bytes = utils::resolve_bytecode(&cli.address_or_bytecode, &cli.rpc_url).await?;
 
     // Compile source and extract deployed bytecode + placeholder ranges
-    let project =
-        project::Project::standard_json(&cli.standard_json_input, cli.solc.as_ref())?;
+    info!("Compiling source with solc");
+    let project = project::Project::standard_json(&cli.standard_json_input, cli.solc.as_ref())?;
     let compiled = project.compiled_runtime_bytecode(&cli.contract_name)?;
 
     // Compare, skipping placeholder regions
+    info!("Verifying bytecode");
     verify::verify_deployed_bytecode(&compiled, &onchain_bytes)?;
 
     println!("verification succeeded");

@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use eyre::{Result, WrapErr, bail, eyre};
 use foundry_compilers::compilers::solc::Solc;
 use foundry_compilers_artifacts_solc::{CompilerOutput, SolcInput};
-use tracing::debug;
+use tracing::{debug, info, trace, warn};
 
 /// Solc specified as either a filesystem path or a version string.
 #[derive(Clone, Debug)]
@@ -39,17 +39,25 @@ pub struct CompiledRuntimeBytecode {
 
 impl Project {
     pub fn standard_json(input_path: &Path, solc: Option<&SolcRef>) -> Result<Self> {
+        debug!(path = %input_path.display(), "Reading standard JSON input");
         let contents = std::fs::read_to_string(input_path)
             .wrap_err_with(|| format!("failed to read {}", input_path.display()))?;
         let input: SolcInput = serde_json::from_str(&contents)
             .wrap_err_with(|| format!("failed to parse {} as SolcInput", input_path.display()))?;
         let solc = match solc {
-            Some(SolcRef::Version(v)) => Solc::find_or_install(v)
-                .wrap_err_with(|| format!("failed to find or install solc {v}"))?,
+            Some(SolcRef::Version(v)) => {
+                info!(version = %v, "Using solc version");
+                Solc::find_or_install(v)
+                    .wrap_err_with(|| format!("failed to find or install solc {v}"))?
+            }
             Some(SolcRef::Path(p)) => {
+                info!(path = %p.display(), "Using solc at path");
                 Solc::new(p).wrap_err_with(|| format!("invalid solc path: {}", p.display()))?
             }
-            None => Solc::new("solc").wrap_err("failed to find solc on PATH")?,
+            None => {
+                info!("Using solc from PATH");
+                Solc::new("solc").wrap_err("failed to find solc on PATH")?
+            }
         };
 
         Ok(Project::StandardJson { input, solc })
@@ -61,8 +69,19 @@ impl Project {
     ) -> Result<CompiledRuntimeBytecode> {
         match self {
             Project::StandardJson { input, solc } => {
+                debug!("Compilation starting");
                 let compiler_output: CompilerOutput =
                     solc.compile(input).wrap_err("solc compilation failed")?;
+                debug!("Compilation completed");
+
+                // Log compiler warnings
+                for diag in &compiler_output.errors {
+                    if !diag.severity.is_error() {
+                        if let Some(msg) = &diag.formatted_message {
+                            warn!("Solc warning: {msg}");
+                        }
+                    }
+                }
 
                 // Check for compilation errors
                 let errors: Vec<_> = compiler_output
@@ -79,8 +98,9 @@ impl Project {
                 }
 
                 // Search for the contract across all files
-                for contracts in compiler_output.contracts.values() {
+                for (source_file, contracts) in &compiler_output.contracts {
                     if let Some(contract) = contracts.get(contract_name) {
+                        info!(contract = contract_name, source = %source_file.display(), "Found contract");
                         let evm = contract
                             .evm
                             .as_ref()
@@ -101,6 +121,9 @@ impl Project {
                             })?
                             .to_vec();
 
+                        debug!(size = bytes.len(), "Compiled bytecode size");
+                        trace!(hex = %alloy::hex::encode(&bytes), "Raw compiled bytecode");
+
                         let mut placeholders = Vec::new();
 
                         // link_references: library address slots
@@ -109,7 +132,7 @@ impl Project {
                                 for o in offsets {
                                     let start = o.start as usize;
                                     let end = start + o.length as usize;
-                                    debug!(start, end, "link reference placeholder");
+                                    debug!(start, end, "Link reference placeholder");
                                     placeholders.push(start..end);
                                 }
                             }
@@ -120,7 +143,7 @@ impl Project {
                             for o in offsets {
                                 let start = o.start as usize;
                                 let end = start + o.length as usize;
-                                debug!(start, end, "immutable reference placeholder");
+                                debug!(start, end, "Immutable reference placeholder");
                                 placeholders.push(start..end);
                             }
                         }
@@ -131,6 +154,7 @@ impl Project {
                         detect_push_zero_placeholders(&bytes, &mut placeholders);
 
                         placeholders.sort_by_key(|r| r.start);
+                        info!(count = placeholders.len(), "Total placeholders collected");
 
                         return Ok(CompiledRuntimeBytecode {
                             bytes,
@@ -160,7 +184,7 @@ fn detect_push_zero_placeholders(compiled: &[u8], placeholders: &mut Vec<Range<u
         debug!(
             start = 1,
             end = 1 + ADDR_LEN,
-            "detected library self-address placeholder"
+            "Detected library self-address placeholder"
         );
         placeholders.push(1..1 + ADDR_LEN);
     }
